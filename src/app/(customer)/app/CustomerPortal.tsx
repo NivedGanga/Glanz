@@ -55,7 +55,8 @@ export default function CustomerPortal() {
   }
   async function signIn() {
     try {
-      const data = await json("/api/auth/otp", { districtId, phone, name,
+      const data = await json("/api/auth/otp", { districtId, phone,
+        name: name || undefined,
         consentVersion: "1", ...(code ? { code } : {}) });
       if (data.id) setSignedIn(true);
       else setMessage("Code requested. Check the development console or your SMS.");

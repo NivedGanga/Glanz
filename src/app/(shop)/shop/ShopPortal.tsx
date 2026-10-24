@@ -45,7 +45,8 @@ export default function ShopPortal() {
   async function signIn() {
     try {
       const result = await api("/api/auth/magic", "POST", { email, token: token || undefined,
-        districtId, legalName, phone, address, consentVersion: "1" });
+        districtId: districtId || undefined, legalName: legalName || undefined,
+        phone: phone || undefined, address: address || undefined, consentVersion: "1" });
       if (result.shopId) { setShopId(result.shopId); await load(result.shopId); }
       else setMessage("Check your development console or email for the sign-in link.");
     } catch (error) { setMessage(String(error)); }
