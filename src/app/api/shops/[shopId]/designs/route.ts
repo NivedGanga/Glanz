@@ -9,7 +9,7 @@ import { validateAttributes } from "../../../../../lib/attributes";
 
 const designInput = z.object({
   categoryId: z.string().uuid(), name: z.string().min(1).max(150),
-  description: z.string().max(3000).default(""), attributes: z.record(z.string()).default({})
+  description: z.string().max(3000).default(""), attributes: z.record(z.string(), z.string()).default({})
 });
 export async function POST(req: NextRequest, context: { params: Promise<{ shopId: string }> }) {
   return guarded("shop.inventory", async () => {

@@ -22,7 +22,7 @@ Vercel Pro upgrade date: **pending**. Managed database extension/plan-limit chec
 
 ## Verification and blockers
 
-`npm install --offline --ignore-scripts` failed (`ENOTCACHED` for Drizzle). Installing from the registry needs permission, so TypeScript checks, normal/unit/property tests, Testcontainers, Playwright, migrations, the pg-boss health job and the staging demo **have not run**. The CI workflow is a scaffold, not evidence of passing CI. Live AI is excluded from normal CI by design.
+An initial offline install failed; after permission to use the npm registry, `npm install`, `npx tsc --noEmit`, `npm test` (49 passing tests, 2 DB integration tests skipped), `npm run build`, `npm run test:e2e` (one mocked mobile smoke test) and `npm audit --audit-level=high` (zero reported vulnerabilities) passed locally. A lockfile now supports reproducible `npm ci`. Docker is unavailable locally, so Testcontainers, migrations, the pg-boss health job and the staging demo **have not run**. The CI workflow is still a scaffold, not evidence of passing CI. Live AI is excluded from normal CI by design.
 
 Before enabling any real-user flag: fix the issues recorded in [Wave 1](wave-1.md), [Wave 2](wave-2.md), [Wave 3](wave-3.md), [Wave 4](wave-4.md) and [Wave 5](wave-5.md), especially atomic OTP and notification limits, real media erasure, authenticated moderation UI, test coverage, actual provider adapters, publication/photo validation and full end-to-end staging flows. Neon pg_trgm availability on the selected actual plan was not verified before Wave 4; production enablement is blocked. Every missing acceptance check remains open rather than assumed passed.
 
@@ -31,8 +31,9 @@ Before enabling any real-user flag: fix the issues recorded in [Wave 1](wave-1.m
 After credentials and a PostgreSQL service are supplied, from the repository root:
 
 ```sh
-npm install
+npm ci
 npx tsc --noEmit
+npm run build
 npm test
 RUN_DB_TESTS=1 npm test
 npm run test:e2e

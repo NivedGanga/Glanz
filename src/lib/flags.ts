@@ -6,7 +6,7 @@ export interface FlagProvider {
   enabled(key: Run1Flag, cohort?: { type: string; id: string }): Promise<boolean>;
 }
 const cache = new Map<string, { value: boolean; expires: number }>();
-export function flagPrerequisite(key: Run1Flag, env: NodeJS.ProcessEnv = process.env) {
+export function flagPrerequisite(key: Run1Flag, env: Partial<NodeJS.ProcessEnv> = process.env) {
   if (key === "shop.photo_entry" || key === "customer.photo_tagging")
     return Boolean((env.GEMINI_TIER === "prod" ? env.GEMINI_API_KEY_PROD : env.GEMINI_API_KEY_DEV)
       && env.S3_BUCKET && env.S3_ENDPOINT && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY);

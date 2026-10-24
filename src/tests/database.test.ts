@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { GenericContainer, type StartedTestContainer } from "testcontainers";
+import { GenericContainer, Wait, type StartedTestContainer } from "testcontainers";
 import { Client } from "pg";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -10,7 +10,9 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("PostgreSQL integration", () => {
   beforeAll(async () => {
     container = await new GenericContainer("postgres:16")
       .withEnvironment({ POSTGRES_PASSWORD: "test", POSTGRES_DB: "test" })
-      .withExposedPorts(5432).start();
+      .withExposedPorts(5432)
+      .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections", 2))
+      .start();
     connection = `postgres://postgres:test@${container.getHost()}:${container.getMappedPort(5432)}/test`;
     const client = new Client({ connectionString: connection });
     await client.connect();

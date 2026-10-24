@@ -11,7 +11,7 @@ const input = z.object({
   districtId: z.string().uuid(), categoryId: z.string().uuid(),
   eventStart: z.string(), returnEnd: z.string(),
   description: z.string().min(1).max(3000), groupSize: z.number().int().min(1).max(100),
-  answers: z.record(z.string()).default({}), maxDistanceKm: z.number().positive().optional(),
+  answers: z.record(z.string(), z.string()).default({}), maxDistanceKm: z.number().positive().optional(),
   consentToAi: z.boolean().default(false), consentVersion: z.string().min(1),
   contactConsentVersion: z.string().min(1)
 });
