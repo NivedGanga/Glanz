@@ -8,7 +8,8 @@ if (existsSync(".env.local")) for (const line of readFileSync(".env.local", "utf
 export default defineConfig({
   testDir: "./src/tests/e2e",
   use: { baseURL: "http://127.0.0.1:3000",
-    channel: process.env.CI ? "chromium" : "chrome" },
+    channel: process.env.CI ? "chromium" : "chrome",
+    launchOptions: { slowMo: Number(process.env.SLOW_MO ?? 0) } },
   webServer: { command: "npm run dev", url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI, timeout: 120_000 }
 });

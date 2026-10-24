@@ -3,13 +3,15 @@ import pg from "pg";
 
 const CUSTOMER_PHONE = "+919000000201";
 
-async function lastDevMessage(request: import("@playwright/test").APIRequestContext,
+async function devMessage(request: import("@playwright/test").APIRequestContext,
   channel: "sms" | "email", to: string) {
-  const before = (await (await request.get(
-    `/api/dev/otp?channel=${channel}&to=${encodeURIComponent(to)}`)).json()).body as string | null;
-  for (let i = 0; i < 20; i++) {
-    const r = await request.get(`/api/dev/otp?channel=${channel}&to=${encodeURIComponent(to)}`);
-    const body = (await r.json()).body as string | null;
+  const r = await request.get(`/api/dev/otp?channel=${channel}&to=${encodeURIComponent(to)}`);
+  return (await r.json()).body as string | null;
+}
+async function waitForNewDevMessage(request: import("@playwright/test").APIRequestContext,
+  channel: "sms" | "email", to: string, before: string | null) {
+  for (let i = 0; i < 60; i++) {
+    const body = await devMessage(request, channel, to);
     if (body && body !== before) return body;
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -39,8 +41,9 @@ test("customer searches, requests and picks a shop; shop replies in its inbox", 
   await page.goto("/app");
   await page.getByLabel("District").selectOption(district.id);
   await page.getByLabel("Phone").fill(CUSTOMER_PHONE);
+  const beforeOtp = await devMessage(request, "sms", CUSTOMER_PHONE);
   await page.getByRole("button", { name: "Send code" }).click();
-  const code = await lastDevMessage(request, "sms", CUSTOMER_PHONE);
+  const code = await waitForNewDevMessage(request, "sms", CUSTOMER_PHONE, beforeOtp);
   await page.getByLabel("Verification code").fill(code);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Create request" })).toBeVisible();
@@ -73,8 +76,9 @@ test("customer searches, requests and picks a shop; shop replies in its inbox", 
   const shopPage = await shopContext.newPage();
   await shopPage.goto("/shop");
   await shopPage.getByLabel("Email").fill("playwright-owner@example.invalid");
+  const beforeEmail = await devMessage(request, "email", "playwright-owner@example.invalid");
   await shopPage.getByRole("button", { name: "Send sign-in link" }).click();
-  const link = await lastDevMessage(request, "email", "playwright-owner@example.invalid");
+  const link = await waitForNewDevMessage(request, "email", "playwright-owner@example.invalid", beforeEmail);
   const token = /token=([0-9a-f]{64})/.exec(link)?.[1];
   expect(token).toBeTruthy();
   await shopPage.getByLabel("Magic link token").fill(token!);
