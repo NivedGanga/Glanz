@@ -1,9 +1,10 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 
-export const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+export { digest } from "./tokens";
+import { digest } from "./tokens";
 const secret = () => {
   if (!process.env.SESSION_SECRET) throw new Error("SESSION_SECRET is required");
   return process.env.SESSION_SECRET;
