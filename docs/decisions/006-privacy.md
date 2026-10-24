@@ -1,0 +1,3 @@
+# 006: Consent and privacy (legal review required)
+
+Record explicit consent with purpose, version, timestamp and withdrawal. Account and contact-sharing consent are distinct from optional request-photo AI consent. A customer can decline AI processing and still submit a text request. Collect phone/name only as needed; disclose selected shops and shared details before submission. Export and delete personal data; retain de-identified append-only operational events, with no phone or image payload. Decide retention schedule, erasure exceptions, consent wording, children's data and verified legal entity with counsel against India's DPDP Act, 2023 before real use. Never send real media to the development Gemini key.

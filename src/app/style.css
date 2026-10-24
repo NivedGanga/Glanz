@@ -1,0 +1,12 @@
+:root { --ink:#18362d; --paper:#f6f2e7; --accent:#b44e29; --line:#b8c4b4; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:radial-gradient(circle at 90% 8%,#dae2cf 0,transparent 32%),var(--paper); font-family:Georgia,serif; }
+main { width:min(100% - 2rem,1100px); margin:auto; padding:2rem 0 6rem; }
+h1 { font-size:clamp(2.5rem,7vw,5rem); line-height:1.05; letter-spacing:-.04em; max-width:14ch; }
+.eyebrow { font:700 .8rem/1.5 sans-serif; letter-spacing:.18em; color:var(--accent); }
+a,button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; padding:.75rem 1.1rem; background:var(--ink); color:white; border:0; border-radius:3px; margin:.3rem; cursor:pointer; }
+input,select,textarea { min-height:44px; padding:.7rem; border:1px solid var(--line); border-radius:3px; background:white; font:inherit; max-width:100%; }
+label { display:grid; gap:.35rem; margin:1rem 0; }
+button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+.card { padding:1.2rem; background:#fffdf8; border:1px solid var(--line); margin:1rem 0; }
+@media(max-width:600px) { main { padding-top:1rem; } nav a { width:100%; margin:.3rem 0; } }
