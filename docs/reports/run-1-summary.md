@@ -16,33 +16,37 @@ Every feature remains flagged off in production and in the demo seed. Staging ma
 - [Consent purposes, DPDP legal review and export/deletion choices](../decisions/006-privacy.md)
 - [Configurable limits, relevance, digest, badge and later calibration placeholders](../decisions/007-defaults.md)
 - [Solo-owner overrides and explicit exclusions of payments/auto-match/later runs](../decisions/008-solo-overrides.md)
+- [Free bucketless local development media, not for Vercel or production](../decisions/009-local-media.md)
 - [Proposed latency and photo-accuracy launch gates](../gates.md)
 
 Vercel Pro upgrade date: **pending**. Managed database extension/plan-limit checks, worker host, R2, paid Gemini project and budget alert, DNS and DLT registration: **pending owner provisioning**. No external credentials are stored.
 
 ## Verification and blockers
 
-After npm access was approved, `npm ci`, `npx tsc --noEmit`, `npm test` (49 passing locally, 3 DB integration tests skipped locally), `npm run build`, `npm run test:e2e` (one mocked mobile smoke test) and `npm audit --audit-level=high` (zero reported vulnerabilities) passed. [GitHub Actions run 40114328355](https://github.com/NivedGanga/Glanz/actions/runs/40114328355) passed on the verification branch, including Testcontainers migrations, pg_trgm, concurrent rental and fictional-seed tests. Docker is unavailable locally, and the pg-boss health job and real staging demo **have not run**. CI currently tests one mocked browser smoke flow, not the five specified end-to-end business flows. Live AI is excluded from normal CI by design.
+After npm access was approved, Docker PostgreSQL was started locally, migrations and a synthetic-photo seed loaded, and the worker completed a health job. `RUN_DB_TESTS=1 npm test` passes 55 tests against real PostgreSQL and `RUN_DEMO_E2E=1 npm run test:e2e` passes two browser tests. `npm run demo:local` exercises the local synthetic shop/customer flow; see the [Wave 3 local media](wave-3-local-media.md) and [Wave 5 local demo](wave-5-local-demo.md) reports. `npx tsc --noEmit` passes. The prior [GitHub Actions run 40114328355](https://github.com/NivedGanga/Glanz/actions/runs/40114328355) passed on the verification branch; CI on the local-media branch still needs confirmation. Live AI is excluded from normal CI by design.
 
 Before enabling any real-user flag: fix the issues recorded in [Wave 1](wave-1.md), [Wave 2](wave-2.md), [Wave 3](wave-3.md), [Wave 4](wave-4.md) and [Wave 5](wave-5.md), especially atomic OTP and notification limits, real media erasure, authenticated moderation UI, test coverage, actual provider adapters, publication/photo validation and full end-to-end staging flows. pg_trgm works in CI's PostgreSQL container, but Neon extension availability on the selected actual plan was not verified before Wave 4; production enablement is blocked. Every missing acceptance check remains open rather than assumed passed.
 
 ## Exact commands
 
-After credentials and a PostgreSQL service are supplied, from the repository root:
+For the free local demo, from the repository root:
 
 ```sh
 npm ci
-npx tsc --noEmit
-npm run build
-npm test
-RUN_DB_TESTS=1 npm test
-npm run test:e2e
+npm run setup:local
+docker compose up -d --wait
 npm run db:migrate
 npm run db:seed
-WORKER_TEST_JOB=1 npm run worker
+# In separate terminals: npm run worker and npm run dev
+npm run demo:local
+RUN_DB_TESTS=1 npm test
+RUN_DEMO_E2E=1 npm run test:e2e
+npx tsc --noEmit
+npm run build
+npm audit --audit-level=high
 ```
 
-The seed is **not idempotent**; run it once on a clean demo database. With an S3-compatible bucket configured, it uploads generated synthetic demo photos; without a bucket, it seeds fictional stock but no photos. For local staging, set `APP_ENV=staging`, `DEMO_MODE=1`, and use only synthetic photos and the development Gemini key. Production uses `APP_ENV=production`, paid Gemini and real customer media only; do not reuse demo settings.
+The seed is **not idempotent**; run it once on a clean demo database. For no-bucket local development, run `npm run setup:local` **once**, `docker compose up -d --wait`, `npm run db:migrate`, `npm run db:seed`, then start `npm run worker` and `npm run dev` in separate terminals before `npm run demo:local`. `setup:local` refuses to overwrite existing secrets. This creates untracked local-only secrets and synthetic media under `.local-data/`. `PHOTO_TAGGER=fake` has no Gemini key and makes no external calls. Production requires owner-provisioned persistent storage, a paid Gemini project and real provider credentials; local files and generated development secrets must not be deployed to Vercel.
 
 ## Open questions for Run 2
 

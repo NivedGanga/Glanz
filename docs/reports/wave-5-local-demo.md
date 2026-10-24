@@ -1,0 +1,7 @@
+# Wave 5 follow-up: live local demo
+
+With all needed flags enabled **only in the local demo district**, `npm run demo:local` successfully exercised owner-authorised design and unit entry, rate card, synthetic upload, background fake tag suggestions, shop confirmation, publish, revocable public catalog link, misspelled-keyword search, consented customer photo analysis, no-AI path without consent, recommendations, explicit shop selection, the shop inbox response, a manually set verification badge, report review, rental block and pause. It also verified that published listing photos are publicly viewable through signed links while request photos remain private until the shop is selected. Photo and recommendation outcomes were checked in PostgreSQL. Signup via phone OTP and email magic link, consent and data export were also exercised manually with fictional local identities.
+
+`RUN_DB_TESTS=1 npm test`: 55 tests pass, including Testcontainers against real PostgreSQL. `RUN_DEMO_E2E=1 npm run test:e2e`: two mobile browser tests pass, including live search from a typo. `npx tsc --noEmit` passes and the separate worker completed its health job.
+
+The demo leaves fake records and local flags enabled in the local development database. It does not enable production flags. Full Playwright coverage for signup, guided request and inbox interactions, hosted staging, paid Gemini accuracy and third-party transports remain open; no claim of real-user readiness.

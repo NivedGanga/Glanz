@@ -35,3 +35,10 @@ export class GeminiTagger implements PhotoTagger {
     throw new Error("INVALID_MODEL_JSON");
   }
 }
+export class FakeTagger implements PhotoTagger {
+  async analyse(photo: PhotoInput, schema: Record<string, string[]>) {
+    if (!photo.isSynthetic) throw new Error("FAKE_TAGGER_REAL_PHOTO_REFUSED");
+    return Object.entries(schema).flatMap(([field, values]) =>
+      values[0] ? [{ field, value: values[0] }] : []);
+  }
+}

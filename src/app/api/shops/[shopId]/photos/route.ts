@@ -34,7 +34,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ shopId
         WHERE d.shop_id=${shopId}::uuid AND pa.created_at>=date_trunc('month',now())`);
       if (Number(usage.total) >= config.monthlyAnalyses) throw new Error("AI_QUOTA_REACHED");
       await db.execute(sql`INSERT INTO photo_analysis(photo_id,purpose,provider,model_version,status)
-        VALUES (${photo.id}::uuid,'shop_listing','gemini','gemini-2.0-flash','pending')`);
+        VALUES (${photo.id}::uuid,'shop_listing',
+          ${process.env.PHOTO_TAGGER === "fake" ? "fake" : "gemini"},
+          ${process.env.PHOTO_TAGGER === "fake" ? "fake-v1" : "gemini-2.0-flash"},'pending')`);
       await queueAnalysis(String(photo.id));
       pending = true;
     }

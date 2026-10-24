@@ -1,8 +1,8 @@
 import PgBoss from "pg-boss";
 import { sql } from "drizzle-orm";
 import { db, pool } from "../db";
-import { GeminiTagger, type PhotoTagger } from "../lib/photo-analysis";
-import { signedPhotoUrl } from "../lib/media";
+import { FakeTagger, GeminiTagger, type PhotoTagger } from "../lib/photo-analysis";
+import { readPhoto } from "../lib/media";
 import { sendDigests } from "../lib/digest";
 import { config } from "../lib/config";
 
@@ -43,10 +43,8 @@ export async function analysePhoto(photoId: string, tagger: PhotoTagger) {
         return;
       }
     }
-    const response = await fetch(await signedPhotoUrl(String(row.storage_key)));
-    if (!response.ok) throw new Error("MEDIA_FETCH_FAILED");
     const tags = await tagger.analyse({
-      bytes: new Uint8Array(await response.arrayBuffer()), isSynthetic: row.is_synthetic === true
+      bytes: await readPhoto(String(row.storage_key)), isSynthetic: row.is_synthetic === true
     }, row.attribute_schema as Record<string, string[]>);
     await db.transaction(async tx => {
       for (const tag of tags) await tx.execute(sql`INSERT INTO tag(entity_type,entity_id,field,value,source,status,model_version)
@@ -55,7 +53,9 @@ export async function analysePhoto(photoId: string, tagger: PhotoTagger) {
         WHERE id=${row.analysis_id}::uuid`);
     });
   } catch (error) {
-    const code = error instanceof Error ? error.message : "ANALYSIS_FAILED";
+    const known = new Set(["INVALID_MODEL_JSON", "DEV_KEY_REAL_PHOTO_REFUSED",
+      "FAKE_TAGGER_REAL_PHOTO_REFUSED", "AI_PROVIDER_ERROR", "AI_NOT_CONFIGURED"]);
+    const code = error instanceof Error && known.has(error.message) ? error.message : "ANALYSIS_FAILED";
     await db.execute(sql`UPDATE photo_analysis SET status='failed',attempts=attempts+1,
       error_code=${code},completed_at=now() WHERE id=${row.analysis_id}::uuid`);
   }
@@ -70,8 +70,10 @@ async function main() {
   await boss.work("health", async () => { console.info("worker health job completed"); });
   await boss.work("photo-analysis", async jobs => {
     const tier = process.env.GEMINI_TIER === "prod" ? "prod" : "dev";
-    const tagger = new GeminiTagger(tier, tier === "prod" ?
-      process.env.GEMINI_API_KEY_PROD ?? "" : process.env.GEMINI_API_KEY_DEV ?? "");
+    const tagger = process.env.PHOTO_TAGGER === "fake" && process.env.DEMO_MODE === "1" &&
+      process.env.APP_ENV !== "production" && !process.env.VERCEL ?
+      new FakeTagger() : new GeminiTagger(tier, tier === "prod" ?
+        process.env.GEMINI_API_KEY_PROD ?? "" : process.env.GEMINI_API_KEY_DEV ?? "");
     for (const job of jobs) await analysePhoto(String((job.data as { photoId: string }).photoId), tagger);
   });
   if (process.env.WORKER_TEST_JOB === "1") await boss.send("health", {});

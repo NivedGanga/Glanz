@@ -1,15 +1,21 @@
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { run1Flags, type Run1Flag } from "./catalog";
+import { localMediaAvailable } from "./media";
 
 export interface FlagProvider {
   enabled(key: Run1Flag, cohort?: { type: string; id: string }): Promise<boolean>;
 }
 const cache = new Map<string, { value: boolean; expires: number }>();
 export function flagPrerequisite(key: Run1Flag, env: Partial<NodeJS.ProcessEnv> = process.env) {
-  if (key === "shop.photo_entry" || key === "customer.photo_tagging")
-    return Boolean((env.GEMINI_TIER === "prod" ? env.GEMINI_API_KEY_PROD : env.GEMINI_API_KEY_DEV)
-      && env.S3_BUCKET && env.S3_ENDPOINT && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY);
+  if (key === "shop.photo_entry" || key === "customer.photo_tagging") {
+    const storageReady = env.STORAGE_PROVIDER === "local" ? localMediaAvailable(env) :
+      Boolean(env.S3_BUCKET && env.S3_ENDPOINT && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY);
+    const taggerReady = env.PHOTO_TAGGER === "fake" ?
+      env.DEMO_MODE === "1" && env.APP_ENV !== "production" && !env.VERCEL :
+      Boolean(env.GEMINI_TIER === "prod" ? env.GEMINI_API_KEY_PROD : env.GEMINI_API_KEY_DEV);
+    return Boolean(storageReady && taggerReady);
+  }
   if (env.NODE_ENV === "production" && env.APP_ENV !== "staging" &&
     (key === "shop.onboarding" || key === "notifications.digest"))
     return Boolean(env.EMAIL_PROVIDER_KEY);

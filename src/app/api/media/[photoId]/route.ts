@@ -24,9 +24,11 @@ export async function GET(_: NextRequest, context: { params: Promise<{ photoId: 
     }
     if (!allowed) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   } else {
-    const [design] = await db.execute(sql`SELECT shop_id FROM design WHERE id=${photo.owner_id}::uuid`);
+    const [design] = await db.execute(sql`SELECT d.shop_id,d.status,s.listing_status
+      FROM design d JOIN shop s ON s.id=d.shop_id WHERE d.id=${photo.owner_id}::uuid`);
     if (!design) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-    await requireShop(String(design.shop_id));
+    if (design.status !== "published" || design.listing_status !== "published")
+      await requireShop(String(design.shop_id));
   }
   return NextResponse.redirect(await signedPhotoUrl(String(photo.storage_key)));
 }

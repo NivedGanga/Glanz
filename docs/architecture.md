@@ -1,6 +1,6 @@
 # Run 1 architecture
 
-One TypeScript Next.js application serves `/shop`, `/app`, `/admin`, and typed zod-validated route handlers on Vercel. Drizzle accesses managed Neon PostgreSQL. A separate long-running Node/pg-boss worker runs on Railway; Vercel Cron may call authenticated scheduling endpoints, never host the worker. Photos live in Cloudflare R2 and are delivered through expiring signed URLs. Adapters isolate Gemini, email, SMS, and future embedding/WhatsApp implementations.
+One TypeScript Next.js application serves `/shop`, `/app`, `/admin`, and typed zod-validated route handlers on Vercel. Drizzle accesses managed Neon PostgreSQL. A separate long-running Node/pg-boss worker runs on Railway; Vercel Cron may call authenticated scheduling endpoints, never host the worker. Production photos require an S3-compatible bucket such as Cloudflare R2. Development photos can live in an untracked local private directory on a persistent host; both adapters serve expiring signed URLs. Local storage is blocked on Vercel and in production. Adapters isolate Gemini, email, SMS, and future embedding/WhatsApp implementations.
 
 Server-side flags have a PostgreSQL source, cohort rules, audit trail and approximately 30-second process cache. Production defaults are off; missing prerequisite configuration prevents enabling. Events are append-only. An entitlement stub supplies configured free-tier limits without affecting search or recommendation ordering.
 
