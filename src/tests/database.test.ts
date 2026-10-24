@@ -3,6 +3,7 @@ import { GenericContainer, Wait, type StartedTestContainer } from "testcontainer
 import { Client } from "pg";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 describe.skipIf(!process.env.RUN_DB_TESTS)("PostgreSQL integration", () => {
   let container: StartedTestContainer;
@@ -59,5 +60,19 @@ describe.skipIf(!process.env.RUN_DB_TESTS)("PostgreSQL integration", () => {
     };
     expect((await Promise.all([insert(), insert()])).filter(Boolean)).toHaveLength(1);
     await admin.end();
+  }, 30_000);
+  it("loads fictional shops, customers and full stock with fake markers", async () => {
+    execFileSync(resolve("node_modules/.bin/tsx"), ["scripts/seed.ts"], {
+      cwd: resolve("."), env: { ...process.env, DATABASE_URL: connection, S3_BUCKET: "" }
+    });
+    const client = new Client({ connectionString: connection });
+    await client.connect();
+    const { rows: [result] } = await client.query(`SELECT
+      (SELECT count(*) FROM shop WHERE is_fake) AS shops,
+      (SELECT count(*) FROM customer WHERE is_fake) AS customers,
+      (SELECT count(*) FROM unit WHERE is_fake) AS units,
+      (SELECT count(*) FROM synonym WHERE is_fake AND status='draft') AS synonyms`);
+    expect(result).toMatchObject({ shops: "3", customers: "3", units: "9", synonyms: "6" });
+    await client.end();
   }, 30_000);
 });

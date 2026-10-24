@@ -27,6 +27,14 @@ async function main() {
     await db.execute(sql`INSERT INTO synonym(field,term,canonical_value,created_by,status,is_fake)
       VALUES ('keyword',${term},${canonical},'demo seed','draft',true)`);
   }
+  for (const [name, phone] of [
+    ["Amaya Vale", "+919000000201"],
+    ["Nira Sol", "+919000000202"],
+    ["Dev Aran", "+919000000203"]
+  ] as const) {
+    await db.execute(sql`INSERT INTO customer(name,phone,district_id,is_fake)
+      VALUES (${name},${phone},${district.id},true)`);
+  }
   for (const [name, email, phone, address, lat, lng] of [
     ["Harbour Lantern Costumes","harbour@example.invalid","+919000000101","Imaginary Lane, Fort Kochi",9.9674,76.2420],
     ["Marigold Stage Wardrobe","marigold@example.invalid","+919000000102","Fictional Road, Ernakulam town",9.9816,76.2999],
