@@ -7,6 +7,7 @@ import { storePhoto } from "../../../../../lib/media";
 import { queueAnalysis } from "../../../../../lib/jobs";
 import { flags } from "../../../../../lib/flags";
 import { config } from "../../../../../lib/config";
+import { demoMode } from "../../../../../lib/demo";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ shopId: string }> }) {
   return guarded("shop.inventory", async () => {
@@ -16,9 +17,11 @@ export async function POST(req: NextRequest, context: { params: Promise<{ shopId
     const file = form.get("photo");
     const designId = String(form.get("designId") ?? "");
     if (!(file instanceof File) || !/image\/(jpeg|png|webp)/.test(file.type)) throw new Error("INVALID_PHOTO");
-    const [design] = await db.execute(sql`SELECT id FROM design WHERE id=${designId}::uuid AND shop_id=${shopId}::uuid`);
+    const [design] = await db.execute(sql`SELECT d.id,s.is_fake FROM design d JOIN shop s ON s.id=d.shop_id
+      WHERE d.id=${designId}::uuid AND d.shop_id=${shopId}::uuid`);
     if (!design) throw new Error("DESIGN_NOT_FOUND");
-    const isSynthetic = process.env.NODE_ENV !== "production" && form.get("synthetic") === "true";
+    const isSynthetic = demoMode() && design.is_fake === true
+      && form.get("synthetic") === "true";
     const key = await storePhoto(Buffer.from(await file.arrayBuffer()));
     const [photo] = await db.execute(sql`INSERT INTO photo(owner_type,owner_id,storage_key,is_synthetic,is_fake)
       VALUES ('design',${designId}::uuid,${key},${isSynthetic},${isSynthetic}) RETURNING id`);

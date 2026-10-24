@@ -1,6 +1,8 @@
 import { db, pool } from "../src/db/index";
 import { sql } from "drizzle-orm";
 import { run1Flags } from "../src/lib/catalog";
+import sharp from "sharp";
+import { storePhoto } from "../src/lib/media";
 
 async function main() {
   const [district] = await db.execute(sql`
@@ -39,6 +41,14 @@ async function main() {
     const [design] = await db.execute(sql`INSERT INTO design(shop_id,category_id,name,description,attributes,is_fake)
       VALUES (${shop.id},${category.id},'Stage dress','Original synthetic demo listing',
       '{"gender_fit":"women","colour":"red","era_style":"traditional","occasion":"stage","size_range":"medium"}',true) RETURNING id`);
+    if (process.env.S3_BUCKET) {
+      const synthetic = await sharp({
+        create: { width: 700, height: 900, channels: 3, background: "#ba4e36" }
+      }).png().toBuffer();
+      const key = await storePhoto(synthetic);
+      await db.execute(sql`INSERT INTO photo(owner_type,owner_id,storage_key,is_synthetic,status,is_fake)
+        VALUES ('design',${design.id}::uuid,${key},true,'active',true)`);
+    }
     for (let n = 0; n < 3; n++) await db.execute(sql`INSERT INTO unit(design_id,branch_id,condition,is_fake)
       VALUES (${design.id},${branch.id},'good',true)`);
     for (const period of ["day","weekend","week","custom"]) {

@@ -3,6 +3,26 @@ import { sql } from "drizzle-orm";
 import { db, pool } from "../db";
 import { GeminiTagger, type PhotoTagger } from "../lib/photo-analysis";
 import { signedPhotoUrl } from "../lib/media";
+import { sendDigests } from "../lib/digest";
+import { config } from "../lib/config";
+
+export async function markIgnored() {
+  const stale = await db.execute(sql`SELECT rs.request_id,rs.shop_id,r.reasons,r.flag_snapshot
+    FROM request_shop rs JOIN request req ON req.id=rs.request_id
+    JOIN recommendation r ON r.request_id=rs.request_id AND r.shop_id=rs.shop_id
+      AND r.shown_at IS NOT NULL
+    WHERE rs.status='sent' AND req.event_start>now()
+      AND r.shown_at < now()-(${config.ignoredAfterHours}::int*interval '1 hour')`);
+  for (const item of stale) await db.transaction(async tx => {
+    const [changed] = await tx.execute(sql`UPDATE request_shop SET status='ignored',responded_at=now()
+      WHERE request_id=${item.request_id}::uuid AND shop_id=${item.shop_id}::uuid
+        AND status='sent' RETURNING request_id`);
+    if (changed) await tx.execute(sql`INSERT INTO event(actor,type,subject,payload,flag_snapshot)
+      VALUES ('system','recommendation.ignored',${item.shop_id},
+        ${JSON.stringify({ requestId: item.request_id, reasons: item.reasons })}::jsonb,
+        ${JSON.stringify(item.flag_snapshot)}::jsonb)`);
+  });
+}
 
 export async function analysePhoto(photoId: string, tagger: PhotoTagger) {
   const [row] = await db.execute(sql`SELECT p.id,p.owner_id,p.owner_type,p.storage_key,p.is_synthetic,
@@ -55,7 +75,11 @@ async function main() {
     for (const job of jobs) await analysePhoto(String((job.data as { photoId: string }).photoId), tagger);
   });
   if (process.env.WORKER_TEST_JOB === "1") await boss.send("health", {});
-  const shutdown = async () => { await boss.stop(); await pool.end(); process.exit(0); };
+  const digestTimer = setInterval(() => {
+    sendDigests().catch(error => console.error("digest error", error));
+    markIgnored().catch(error => console.error("ignored outcome error", error));
+  }, 60_000);
+  const shutdown = async () => { clearInterval(digestTimer); await boss.stop(); await pool.end(); process.exit(0); };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 }

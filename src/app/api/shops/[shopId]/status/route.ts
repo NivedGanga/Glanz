@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../../../../db";
 import { requireShop } from "../../../../../lib/auth";
 import { guarded } from "../../../../../lib/http";
+import { demoMode } from "../../../../../lib/demo";
 
 const input = z.object({ status: z.enum(["published","paused"]), designId: z.string().uuid().optional() });
 export async function PATCH(req: NextRequest, context: { params: Promise<{ shopId: string }> }) {
@@ -19,7 +20,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ shopI
           JOIN shop s ON s.id=d.shop_id JOIN branch b ON b.shop_id=s.id
           WHERE s.id=${shopId}::uuid AND (${body.designId ?? null}::uuid IS NULL OR d.id=${body.designId ?? null}::uuid)
           AND length(d.name)>0 AND length(s.phone)>0 AND length(b.address)>0
-          AND (p.is_synthetic=false OR (${process.env.NODE_ENV !== "production"} AND s.is_fake AND p.is_fake))
+          AND (p.is_synthetic=false OR (${demoMode()} AND s.is_fake AND p.is_fake))
           LIMIT 1`);
         if (!valid) throw new Error("LISTING_INCOMPLETE_OR_NO_OWN_PHOTO");
       }

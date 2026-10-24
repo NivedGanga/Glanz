@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { guarded } from "../../../lib/http";
 import { requireSession } from "../../../lib/auth";
 import { recordEvent } from "../../../lib/events";
 
 export async function GET(req: NextRequest) {
-  return guarded("customer.accounts", async () => {
+  try {
     const type = req.nextUrl.searchParams.get("type") === "shop" ? "shop" : "customer";
     const id = await requireSession(type);
     if (type === "shop") {
@@ -23,10 +22,10 @@ export async function GET(req: NextRequest) {
       FROM consent WHERE subject_type='customer' AND subject_id=${id}::uuid`);
     await recordEvent(id, "customer.exported", id);
     return NextResponse.json({ customers, requests, consents });
-  });
+  } catch { return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 }); }
 }
 export async function DELETE() {
-  return guarded("customer.accounts", async () => {
+  try {
     const id = await requireSession("customer");
     // Preserve aggregate event history without personal text or contact information.
     await db.transaction(async tx => {
@@ -44,5 +43,5 @@ export async function DELETE() {
     });
     await recordEvent("system", "customer.deleted", id);
     return NextResponse.json({ ok: true, mediaDeletionPending: true });
-  });
+  } catch { return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 }); }
 }

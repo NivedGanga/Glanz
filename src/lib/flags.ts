@@ -8,7 +8,13 @@ export interface FlagProvider {
 const cache = new Map<string, { value: boolean; expires: number }>();
 export function flagPrerequisite(key: Run1Flag, env: NodeJS.ProcessEnv = process.env) {
   if (key === "shop.photo_entry" || key === "customer.photo_tagging")
-    return Boolean(env.GEMINI_TIER === "prod" ? env.GEMINI_API_KEY_PROD : env.GEMINI_API_KEY_DEV);
+    return Boolean((env.GEMINI_TIER === "prod" ? env.GEMINI_API_KEY_PROD : env.GEMINI_API_KEY_DEV)
+      && env.S3_BUCKET && env.S3_ENDPOINT && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY);
+  if (env.NODE_ENV === "production" && env.APP_ENV !== "staging" &&
+    (key === "shop.onboarding" || key === "notifications.digest"))
+    return Boolean(env.EMAIL_PROVIDER_KEY);
+  if (env.NODE_ENV === "production" && env.APP_ENV !== "staging" && key === "customer.accounts")
+    return Boolean(env.SMS_PROVIDER_KEY && env.DLT_SENDER_ID && env.DLT_TEMPLATE_ID);
   return true;
 }
 export class DatabaseFlags implements FlagProvider {

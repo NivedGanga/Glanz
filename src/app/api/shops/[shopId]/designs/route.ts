@@ -19,9 +19,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ shopId
     const [category] = await db.execute(sql`SELECT attribute_schema FROM category WHERE id=${body.categoryId}::uuid`);
     if (!category) throw new Error("UNKNOWN_CATEGORY");
     validateAttributes(category.attribute_schema as Record<string, string[]>, body.attributes);
-    const [design] = await db.execute(sql`INSERT INTO design(shop_id,category_id,name,description,attributes)
+    const [design] = await db.execute(sql`INSERT INTO design(shop_id,category_id,name,description,attributes,is_fake)
       VALUES (${shopId}::uuid,${body.categoryId}::uuid,${body.name},${body.description},
-        ${JSON.stringify(body.attributes)}::jsonb) RETURNING id`);
+        ${JSON.stringify(body.attributes)}::jsonb,
+        (SELECT is_fake FROM shop WHERE id=${shopId}::uuid)) RETURNING id`);
     await recordEvent(actor, "design.created", String(design.id), { shopId });
     return NextResponse.json({ id: design.id }, { status: 201 });
   });

@@ -6,5 +6,16 @@ export const t = {
   disclosure: "Your name, phone number, request details and selected reference photos will be shared only with the shops you select.",
   pending: "Analysis pending", confirm: "Confirm", reject: "Reject",
   report: "Report photo", interest: "Interested", decline: "Decline",
-  free: "Free", limited: "Limited", unavailable: "Unavailable"
+  free: "Free", limited: "Limited", unavailable: "Unavailable",
+  district: "District", keyword: "Keyword", code: "Verification code",
+  requestCode: "Send code", signIn: "Sign in", createRequest: "Create request",
+  description: "Describe what you need", category: "Category ID",
+  groupSize: "Group size", aiConsent: "Optional AI photo analysis",
+  chooseShops: "Choose shops to contact", sendRequest: "Send to selected shops",
+  results: "Available costumes", empty: "No close matches",
+  inventory: "Inventory", shopPortal: "Shop portal", legalName: "Shop name",
+  address: "Branch address", photo: "Your own costume photo",
+  pendingTags: "Suggested tags", review: "Review", published: "Publish",
+  requestInbox: "Selected requests", newDesign: "Add design", price: "Price in paise",
+  condition: "Condition", draft: "Draft", customerPortal: "Customer portal"
 } as const;

@@ -7,6 +7,7 @@ import { email } from "../../../../lib/adapters";
 import { guarded } from "../../../../lib/http";
 import { recordEvent } from "../../../../lib/events";
 import { config } from "../../../../lib/config";
+import { demoMode } from "../../../../lib/demo";
 
 const input = z.object({ email: z.string().email(), token: z.string().optional(),
   districtId: z.string().uuid().optional(), legalName: z.string().min(1).optional(),
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
         throw new Error("SIGNUP_DETAILS_REQUIRED");
       const [district] = await db.execute(sql`SELECT country_code FROM district WHERE id=${body.districtId}::uuid`);
       if (!district || !body.phone.startsWith(String(district.country_code))) throw new Error("INVALID_PHONE_DISTRICT");
+      const demo = demoMode();
       const [shop] = await db.execute(sql`INSERT INTO shop(legal_name,email,district_id,phone,plan_id)
         SELECT ${body.legalName},${body.email},${body.districtId}::uuid,${body.phone},id FROM plan WHERE name='free'
         RETURNING id`);
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`INSERT INTO shop_user(user_id,shop_id,email,role)
         VALUES (${userId}::uuid,${shopId}::uuid,${body.email},'owner')`);
       await db.execute(sql`INSERT INTO branch(shop_id,address) VALUES (${shopId}::uuid,${body.address})`);
+      if (demo) await db.execute(sql`UPDATE shop SET is_fake=true WHERE id=${shopId}::uuid`);
       await db.execute(sql`INSERT INTO shop_settings(shop_id,notification_daily_cap)
         VALUES (${shopId}::uuid,${config.dailyNotifications})`);
       await db.execute(sql`INSERT INTO consent(subject_type,subject_id,purpose,version)
